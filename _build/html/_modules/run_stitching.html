@@ -1,0 +1,582 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>run_stitching &#8212; Upscaling  documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for run_stitching</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">vigra</span>
+<span class="kn">from</span> <span class="nn">concurrent.futures</span> <span class="kn">import</span> <span class="n">ThreadPoolExecutor</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="n">maxlabel</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+<div class="viewcode-block" id="stitching_row"><a class="viewcode-back" href="../index.html#run_stitching.stitching_row">[docs]</a><span class="k">def</span> <span class="nf">stitching_row</span><span class="p">(</span><span class="n">start_index</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">row_count</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">total_shape</span><span class="o">=</span><span class="p">(</span><span class="mi">1024</span><span class="p">,</span> <span class="mi">2304</span><span class="p">,</span> <span class="mi">1792</span><span class="p">),</span> <span class="n">maxlabel</span><span class="o">=</span><span class="n">maxlabel</span><span class="p">,</span>
+                  <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">res_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+                  <span class="n">input_folder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_file_pattern</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function stitches the input cubes into rows along x axis.</span>
+
+<span class="sd">        start_index --- where starts the first cube</span>
+<span class="sd">        row_count --- number of current row, needed for result file and for further stitching into columns</span>
+<span class="sd">        step --- step between consecutive segmentation cubes along x axis</span>
+<span class="sd">        total_shape --- shape of the whole dataset</span>
+<span class="sd">        res_path --- output folder</span>
+<span class="sd">        overlap --- overlap between consecutive segmentation cubes</span>
+<span class="sd">        input_file_pattern --- pattern to get input files</span>
+
+<span class="sd">        results are writen to output folder under &#39;result_stitching_row_{row_count}.h5&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;result_stitching_row_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">row_count</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span>
+
+    <span class="c1">#if you restart because of some reason this part will save time and access the existing files. If the exising file is empty, it will be recalulated.</span>
+    <span class="c1"># if os.path.exists(res_path + name):</span>
+    <span class="c1">#     current_shape = (</span>
+    <span class="c1">#     min(total_shape[0] - start_index[0], step + overlap), min(total_shape[1] - start_index[1], step + overlap),</span>
+    <span class="c1">#     total_shape[2])</span>
+    <span class="c1">#     f = h5py.File(res_path + name, &#39;a&#39;)</span>
+    <span class="c1">#     bb = np.s_[:current_shape[0], : current_shape[1], : current_shape[2]]</span>
+    <span class="c1">#     maxlabel = np.max(f[&#39;data&#39;][bb])</span>
+    <span class="c1">#     if maxlabel != 0:</span>
+    <span class="c1">#       return current_shape, maxlabel</span>
+
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">res_path</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">total_shape</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="s1">&#39;gzip&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;uint64&#39;</span><span class="p">)</span>
+
+    <span class="n">result_file_row</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">res_path</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;a&#39;</span><span class="p">)</span>
+    <span class="n">result_dataset_row</span> <span class="o">=</span> <span class="n">result_file_row</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+
+    <span class="n">z</span> <span class="o">=</span> <span class="n">start_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">start_index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">start_index</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">coordinate</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">start_index</span><span class="p">)</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="n">nz</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="n">total_shape</span>
+    <span class="n">size_cube</span> <span class="o">=</span> <span class="n">step</span> <span class="o">+</span> <span class="mi">256</span>
+    <span class="n">current_shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This part consecutively stitches input files. </span>
+<span class="sd">    If it is the first one opened, it is just written directly to the result file. If not, stitching function is run to add new opened region to the result file. </span>
+<span class="sd">    If the input file is empty, it is considered equal to zeros, so just the current shape of the resulting dataset is updated.  </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">end</span><span class="p">:</span>
+        <span class="n">filename_results</span> <span class="o">=</span> <span class="n">input_file_pattern</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">input_folder</span> <span class="o">+</span> <span class="n">filename_results</span><span class="p">):</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">input_folder</span> <span class="o">+</span> <span class="n">filename_results</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">current_label</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][:,</span> <span class="p">:,</span> <span class="p">:]</span>
+
+                <span class="k">if</span> <span class="n">current_shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+                    <span class="n">current_shape</span> <span class="o">=</span> <span class="n">current_label</span><span class="o">.</span><span class="n">shape</span>
+                    <span class="n">part</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[:</span>    <span class="n">current_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">:</span>  <span class="n">current_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">:</span> <span class="n">current_shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+                    <span class="n">current_label</span><span class="p">,</span> <span class="n">new_maxlabel</span><span class="p">,</span> <span class="n">mapping</span> <span class="o">=</span> <span class="n">vigra</span><span class="o">.</span><span class="n">analysis</span><span class="o">.</span><span class="n">relabelConsecutive</span><span class="p">(</span><span class="n">current_label</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;uint64&#39;</span><span class="p">),</span>
+                                                                                             <span class="n">start_label</span><span class="o">=</span><span class="n">maxlabel</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                                                                                             <span class="n">keep_zeros</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                    <span class="n">current_label</span> <span class="o">=</span> <span class="n">vigra</span><span class="o">.</span><span class="n">analysis</span><span class="o">.</span><span class="n">applyMapping</span><span class="p">(</span><span class="n">current_label</span><span class="p">,</span> <span class="n">mapping</span><span class="o">=</span><span class="p">{</span><span class="n">maxlabel</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+                                                                <span class="n">allow_incomplete_mapping</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                    <span class="n">maxlabel</span> <span class="o">=</span> <span class="n">new_maxlabel</span>
+                    <span class="n">result_dataset_row</span><span class="o">.</span><span class="n">write_direct</span><span class="p">(</span><span class="n">current_label</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="n">part</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">maxlabel</span><span class="p">,</span> <span class="n">current_shape</span> <span class="o">=</span> <span class="n">stitching_function</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">current_label</span><span class="p">,</span> <span class="n">current_shape</span><span class="p">,</span>
+                                                                 <span class="n">current_maxlabel</span><span class="o">=</span><span class="n">maxlabel</span><span class="p">,</span> <span class="n">start_index_2</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span>
+                                                                 <span class="n">res_path</span><span class="o">=</span><span class="n">res_path</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">size</span> <span class="o">=</span> <span class="n">step</span> <span class="o">+</span> <span class="n">overlap</span>
+                <span class="k">if</span> <span class="n">current_shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+                    <span class="n">current_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">current_shape</span><span class="p">)</span>
+                    <span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span> <span class="p">(</span><span class="n">total_shape</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">step</span><span class="p">)</span>
+                    <span class="n">current_shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">coordinate</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span> <span class="o">+=</span> <span class="n">step</span>
+        <span class="n">z</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="n">coordinate</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">coordinate</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">total_shape</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span>
+    <span class="c1"># current_shape = (</span>
+    <span class="c1">#     min(total_shape[0] - start_index[0], step + 256),</span>
+    <span class="c1">#     min(total_shape[1] - start_index[1], step + 256), total_shape[2])</span>
+
+    <span class="k">return</span> <span class="n">current_shape</span><span class="p">,</span> <span class="n">maxlabel</span></div>
+
+
+<div class="viewcode-block" id="stitching_column_by_rows"><a class="viewcode-back" href="../index.html#run_stitching.stitching_column_by_rows">[docs]</a><span class="k">def</span> <span class="nf">stitching_column_by_rows</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">column_index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">shapes_of_rows</span><span class="o">=</span><span class="p">[(</span><span class="mi">1024</span><span class="p">,</span> <span class="mi">1024</span><span class="p">,</span> <span class="mi">1024</span><span class="p">)],</span> <span class="n">maxlabel</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">start_row_index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                             <span class="n">end_row_index</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                             <span class="n">step_z</span><span class="o">=</span><span class="mi">768</span><span class="p">,</span> <span class="n">step_y</span><span class="o">=</span><span class="mi">768</span><span class="p">,</span> <span class="n">step_x</span><span class="o">=</span><span class="mi">768</span><span class="p">,</span> <span class="n">total_shape</span><span class="o">=</span><span class="p">(</span><span class="mi">1024</span><span class="p">,</span> <span class="mi">2304</span><span class="p">,</span> <span class="mi">1792</span><span class="p">),</span> <span class="n">res_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                             <span class="n">overlap</span><span class="o">=</span><span class="mi">256</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function stitches rows into columns along y axis.</span>
+<span class="sd">    :param z: starting z for this column</span>
+<span class="sd">    :param column_index: number of current column</span>
+<span class="sd">    :param shapes_of_rows: shapes of rows to be stitched, should be a list of 2 tuples of size 3</span>
+<span class="sd">    :param maxlabel: starting label for this column</span>
+<span class="sd">    :param start_row_index: index of the first row in the selection of rws to be stitched together</span>
+<span class="sd">    :param end_row_index: index of the last row in the selection of rws to be stitched together (not included in result)</span>
+<span class="sd">    :param step_z: step along z axis</span>
+<span class="sd">    :param step_y: step along y axis</span>
+<span class="sd">    :param step_x: step along x axis</span>
+<span class="sd">    :param total_shape: total shape of the inital dataset</span>
+<span class="sd">    :param res_path: folder for the output files</span>
+<span class="sd">    :param overlap: overlap between consecutive input cubes of segmentation</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">current_shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;result_stitching_column_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">column_index</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span>
+
+    <span class="c1"># if you restart because of some reason this part will save time and access the existing files. If the exising file is empty, it will be recalulated.</span>
+    <span class="c1"># if os.path.exists(res_path + name):</span>
+    <span class="c1">#     current_shape = (min(total_shape[0] - z, step_z + overlap), total_shape[1], total_shape[2])</span>
+    <span class="c1">#     f = h5py.File(res_path + name, &#39;a&#39;)</span>
+    <span class="c1">#     bb = np.s_[: current_shape[0], :, :]</span>
+    <span class="c1">#     maxlabel = np.max(f[&#39;data&#39;][bb])</span>
+    <span class="c1">#     if maxlabel != 0:</span>
+    <span class="c1">#       return current_shape, maxlabel</span>
+
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">res_path</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">total_shape</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="s1">&#39;gzip&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;uint64&#39;</span><span class="p">)</span>
+
+    <span class="n">result_file_column</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">res_path</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;a&#39;</span><span class="p">)</span>
+    <span class="n">result_dataset_column</span> <span class="o">=</span> <span class="n">result_file_column</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This part consecutively stitches row files . </span>
+<span class="sd">    If it is the first one opened, it is just written directly to the result file. If not, stitching function is run to add new opened region to the result file. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start_row_index</span><span class="p">,</span> <span class="n">end_row_index</span><span class="p">):</span>
+        <span class="n">name_row</span> <span class="o">=</span> <span class="s1">&#39;result_stitching_row_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span>
+        <span class="n">file_row</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">res_path</span> <span class="o">+</span> <span class="n">name_row</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
+        <span class="n">current_label</span> <span class="o">=</span> <span class="n">file_row</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][:</span><span class="n">shapes_of_rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="p">:</span>  <span class="n">shapes_of_rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="p">:</span><span class="n">shapes_of_rows</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">2</span><span class="p">]]</span>
+        <span class="k">if</span> <span class="n">current_shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">current_shape</span> <span class="o">=</span> <span class="n">current_label</span><span class="o">.</span><span class="n">shape</span>
+            <span class="n">part</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[:</span>  <span class="n">current_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">:</span> <span class="n">current_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">:</span> <span class="n">current_shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+            <span class="n">result_dataset_column</span><span class="o">.</span><span class="n">write_direct</span><span class="p">(</span><span class="n">current_label</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="n">part</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">maxlabel</span><span class="p">,</span> <span class="n">current_shape</span> <span class="o">=</span> <span class="n">stitching_function</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">current_label</span><span class="p">,</span> <span class="n">current_shape</span><span class="p">,</span>
+                                                         <span class="n">current_maxlabel</span><span class="o">=</span><span class="n">maxlabel</span><span class="p">,</span>
+                                                         <span class="n">start_index_2</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">res_path</span><span class="o">=</span><span class="n">res_path</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">+=</span> <span class="n">step_y</span>
+    <span class="k">return</span> <span class="n">current_shape</span><span class="p">,</span> <span class="n">maxlabel</span></div>
+
+
+<div class="viewcode-block" id="stitch_total"><a class="viewcode-back" href="../index.html#run_stitching.stitch_total">[docs]</a><span class="k">def</span> <span class="nf">stitch_total</span><span class="p">(</span><span class="n">step_x</span><span class="o">=</span><span class="mi">768</span><span class="p">,</span> <span class="n">step_y</span><span class="o">=</span><span class="mi">768</span><span class="p">,</span> <span class="n">step_z</span><span class="o">=</span><span class="mi">768</span><span class="p">,</span> <span class="n">maxlabel</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">total_shape</span><span class="o">=</span><span class="p">(</span><span class="mi">1024</span><span class="p">,</span> <span class="mi">2304</span><span class="p">,</span> <span class="mi">1792</span><span class="p">),</span> <span class="n">n_workers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                 <span class="n">res_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">result_filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+                 <span class="n">input_folder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_file_pattern</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        step_x, step_y, step_z -- steps used for segmentation calculation along the 3 axis</span>
+<span class="sd">        maxlabel -- all new labels will be greater or equal to this one</span>
+<span class="sd">        total_shape -- shape of the whole dataset</span>
+<span class="sd">        n_workers -- number of threads</span>
+<span class="sd">        res_path -- folder for writing results</span>
+<span class="sd">        result_filename -- name of the final file with results</span>
+<span class="sd">        overlap -- overlap between cubes used for segmentation calculations</span>
+<span class="sd">        input_folder -- folder with segmentation results to be stitched</span>
+<span class="sd">        input_file_pattern -- pattern &#39;*{}_{}_{}*.h5&#39; where {} correspond to z, y, x</span>
+
+<span class="sd">        This function first stitches cubes into rows, then rows into columns and then the final step --- all together.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">nz</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="n">total_shape</span>
+    <span class="n">row_index</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">shapes_of_rows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+    <span class="n">maxlabels</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">y_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">step_y</span><span class="p">)</span>
+    <span class="n">z_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">nz</span><span class="p">,</span> <span class="n">step_z</span><span class="p">)</span>
+
+    <span class="n">n_rows</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_positions</span><span class="p">)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">z_positions</span><span class="p">)</span>
+    <span class="n">row_indexes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_rows</span><span class="p">)</span>
+
+    <span class="n">variables</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">z_positions</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">y_positions</span><span class="p">:</span>
+            <span class="n">variables</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">z</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">row_indexes</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="c1">#stitching into rows with the use of multithreading</span>
+    <span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">n_workers</span><span class="p">)</span> <span class="k">as</span> <span class="n">tpe</span><span class="p">:</span>
+        <span class="c1"># submit the tasks</span>
+        <span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">tpe</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">stitching_row</span><span class="p">,</span> <span class="n">start_index</span><span class="o">=</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">row_count</span><span class="o">=</span><span class="n">row_index</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">step_x</span><span class="p">,</span>
+                       <span class="n">total_shape</span><span class="o">=</span><span class="n">total_shape</span><span class="p">,</span> <span class="n">maxlabel</span><span class="o">=</span><span class="n">maxlabel</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">res_path</span><span class="o">=</span><span class="n">res_path</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="n">overlap</span><span class="p">,</span>
+                       <span class="n">input_folder</span><span class="o">=</span><span class="n">input_folder</span><span class="p">,</span> <span class="n">input_file_pattern</span><span class="o">=</span><span class="n">input_file_pattern</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">z</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">row_index</span> <span class="ow">in</span> <span class="n">variables</span>
+        <span class="p">]</span>
+        <span class="c1"># get results</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">task</span><span class="o">.</span><span class="n">result</span><span class="p">()</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;row index&#39;</span><span class="p">,</span> <span class="n">row_indexes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;threads results after stitching rows &#39;</span><span class="p">,</span> <span class="n">results</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+        <span class="n">shapes_of_rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">maxlabels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">maxlabel</span> <span class="o">=</span> <span class="n">maxlabels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">shapes_of_columns</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+
+    <span class="n">variables1</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">n_y_pos</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_positions</span><span class="p">)</span>
+    <span class="n">row_index</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">column_indexes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">z_positions</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">z_positions</span><span class="p">:</span>
+        <span class="n">variables1</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">z</span><span class="p">,</span> <span class="n">column_indexes</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">row_index</span><span class="p">,</span> <span class="n">row_index</span> <span class="o">+</span> <span class="n">n_y_pos</span><span class="p">))</span>
+        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">row_index</span> <span class="o">+=</span> <span class="n">n_y_pos</span>
+    <span class="c1">#stitching rows into columns by multithreading</span>
+    <span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">n_workers</span><span class="p">)</span> <span class="k">as</span> <span class="n">tpe</span><span class="p">:</span>
+        <span class="c1"># submit the tasks</span>
+        <span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">tpe</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">stitching_column_by_rows</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="n">z</span><span class="p">,</span> <span class="n">column_index</span><span class="o">=</span><span class="n">column_index</span><span class="p">,</span> <span class="n">shapes_of_rows</span><span class="o">=</span><span class="n">shapes_of_rows</span><span class="p">,</span>
+                       <span class="n">maxlabel</span><span class="o">=</span><span class="n">maxlabel</span><span class="p">,</span> <span class="n">start_row_index</span><span class="o">=</span><span class="n">start_row_index</span><span class="p">,</span> <span class="n">end_row_index</span><span class="o">=</span><span class="n">end_row_index</span><span class="p">,</span>
+                       <span class="n">step_z</span><span class="o">=</span><span class="n">step_z</span><span class="p">,</span> <span class="n">step_y</span><span class="o">=</span><span class="n">step_y</span><span class="p">,</span> <span class="n">step_x</span><span class="o">=</span><span class="n">step_x</span><span class="p">,</span> <span class="n">total_shape</span><span class="o">=</span><span class="n">total_shape</span><span class="p">,</span> <span class="n">res_path</span><span class="o">=</span><span class="n">res_path</span><span class="p">,</span>
+                       <span class="n">overlap</span><span class="o">=</span><span class="n">overlap</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">z</span><span class="p">,</span> <span class="n">column_index</span><span class="p">,</span> <span class="n">start_row_index</span><span class="p">,</span> <span class="n">end_row_index</span> <span class="ow">in</span> <span class="n">variables1</span>
+        <span class="p">]</span>
+        <span class="c1"># get results</span>
+        <span class="n">results1</span> <span class="o">=</span> <span class="p">[</span><span class="n">task</span><span class="o">.</span><span class="n">result</span><span class="p">()</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">]</span>
+
+    <span class="n">maxlabels1</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">results1</span><span class="p">:</span>
+        <span class="n">shapes_of_columns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">maxlabels1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">maxlabel</span> <span class="o">=</span> <span class="n">maxlabels1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">z</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">current_shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">result_file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">res_path</span> <span class="o">+</span> <span class="n">result_filename</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">)</span>
+    <span class="n">result_dataset</span> <span class="o">=</span> <span class="n">result_file</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+    <span class="c1">#stitch everything up</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">column_indexes</span><span class="p">)):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;result_stitching_column_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">res_path</span> <span class="o">+</span> <span class="n">name</span><span class="p">)</span>
+        <span class="n">current_label</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][:</span> <span class="n">shapes_of_columns</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="p">:</span> <span class="n">shapes_of_columns</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="p">:</span><span class="n">shapes_of_columns</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">2</span><span class="p">]]</span>
+        <span class="k">if</span> <span class="n">current_shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">current_shape</span> <span class="o">=</span> <span class="n">current_label</span><span class="o">.</span><span class="n">shape</span>
+            <span class="n">part</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[:</span> <span class="n">current_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">:</span> <span class="n">current_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">:</span> <span class="n">current_shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+            <span class="n">result_dataset</span><span class="o">.</span><span class="n">write_direct</span><span class="p">(</span><span class="n">current_label</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="n">part</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">maxlabel</span><span class="p">,</span> <span class="n">current_shape</span> <span class="o">=</span> <span class="n">stitching_function</span><span class="p">(</span><span class="n">result_filename</span><span class="p">,</span> <span class="n">current_label</span><span class="p">,</span> <span class="n">current_shape</span><span class="p">,</span>
+                                                         <span class="n">current_maxlabel</span><span class="o">=</span><span class="n">maxlabel</span><span class="p">,</span>
+                                                         <span class="n">start_index_2</span><span class="o">=</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">res_path</span><span class="o">=</span><span class="n">res_path</span><span class="p">)</span>
+        <span class="n">z</span> <span class="o">+=</span> <span class="n">step_z</span>
+    <span class="k">return</span> <span class="n">current_shape</span><span class="p">,</span> <span class="n">maxlabel</span></div>
+
+
+<div class="viewcode-block" id="stitching_function"><a class="viewcode-back" href="../index.html#run_stitching.stitching_function">[docs]</a><span class="k">def</span> <span class="nf">stitching_function</span><span class="p">(</span><span class="n">result_filename</span><span class="p">,</span> <span class="n">new_region</span><span class="p">,</span> <span class="n">current_shape</span><span class="p">,</span> <span class="n">current_maxlabel</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">start_index_2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">res_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function stitches existing region and new one taking in consideration the overlapping region.</span>
+
+<span class="sd">    :param result_filename: where to write results and where to add new region</span>
+<span class="sd">    :param new_region: new region to be added to the result file</span>
+<span class="sd">    :param current_shape: shape of the current region in the result file</span>
+<span class="sd">    :param current_maxlabel: used to relabel new region without intersection of the labels</span>
+<span class="sd">    :param start_index_2: where new region starts</span>
+<span class="sd">    :param res_path: folder fo the output</span>
+<span class="sd">    :return: new maxlabel and new current shape</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    First we relabel new region to consecutive labels, that are greater than labels in the existing region. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">new_region</span><span class="p">,</span> <span class="n">max_label</span><span class="p">,</span> <span class="n">mapping</span> <span class="o">=</span> <span class="n">vigra</span><span class="o">.</span><span class="n">analysis</span><span class="o">.</span><span class="n">relabelConsecutive</span><span class="p">(</span><span class="n">new_region</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;uint64&#39;</span><span class="p">),</span>
+                                                                       <span class="n">start_label</span><span class="o">=</span><span class="n">current_maxlabel</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                                                                       <span class="n">keep_zeros</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">new_region</span> <span class="o">=</span> <span class="n">vigra</span><span class="o">.</span><span class="n">analysis</span><span class="o">.</span><span class="n">applyMapping</span><span class="p">(</span><span class="n">labels</span><span class="o">=</span><span class="n">new_region</span><span class="p">,</span> <span class="n">mapping</span><span class="o">=</span><span class="p">{</span><span class="n">current_maxlabel</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+                                             <span class="n">allow_incomplete_mapping</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">current_maxlabel</span> <span class="o">=</span> <span class="n">max_label</span>
+    <span class="n">shape2</span> <span class="o">=</span> <span class="n">new_region</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[</span><span class="n">start_index_2</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">start_index_2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">shape2</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">start_index_2</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">start_index_2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">shape2</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">start_index_2</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span> <span class="n">start_index_2</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">shape2</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+
+    <span class="sd">&quot;&quot;&quot;From the file with the results we read only the part that corresponds to the new region, to get information about overlapping region, and to have a part that will cover results for the non-overlapping region.&quot;&quot;&quot;</span>
+    <span class="n">resultfile</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">res_path</span> <span class="o">+</span> <span class="n">result_filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;a&#39;</span><span class="p">)</span>
+    <span class="n">result_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape2</span><span class="p">)</span>
+    <span class="n">resultfile</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">read_direct</span><span class="p">(</span><span class="n">result_data</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:])</span>
+
+    <span class="c1"># get shapes</span>
+    <span class="n">shape1</span> <span class="o">=</span> <span class="n">current_shape</span>
+    <span class="n">shape2</span> <span class="o">=</span> <span class="n">new_region</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="n">shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="n">shape</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">start_index_2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">shape2</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">shape1</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="n">shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="c1"># non-overlapping regions</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Then we deal with non-overlapping region of the new one. It is copied to the result dataset. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">start_index_2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">shape2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">shape1</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="n">start</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">shape1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">part</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[</span><span class="n">start</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">start_index_2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">shape2</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">start</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">start_index_2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">shape2</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                   <span class="n">start</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span> <span class="n">start_index_2</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">shape2</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+            <span class="n">start</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">shape1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">start_index_2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">part1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[</span><span class="n">start</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">start_index_2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">shape2</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">start</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">start_index_2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">shape2</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                    <span class="n">start</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span> <span class="n">start_index_2</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">shape2</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+            <span class="c1"># result_dataset.write_direct(new_region, source_sel = part1, dest_sel = part)</span>
+            <span class="n">result_data</span><span class="p">[</span><span class="n">part1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">new_region</span><span class="p">[</span><span class="n">part1</span><span class="p">])</span>
+
+    <span class="c1"># overlapping region</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Here we start with the overlapping zone. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">start_in1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">start_index_2</span><span class="p">)</span>
+    <span class="n">end_in1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="nb">min</span><span class="p">(</span><span class="n">start_in1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">shape2</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">shape1</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                        <span class="nb">min</span><span class="p">(</span><span class="n">start_in1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">shape2</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">shape1</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+                        <span class="nb">min</span><span class="p">(</span><span class="n">start_in1</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">shape2</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">shape1</span><span class="p">[</span><span class="mi">2</span><span class="p">])))</span>
+
+    <span class="n">part_in1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[</span><span class="n">start_in1</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">end_in1</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">start_in1</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">end_in1</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">start_in1</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span> <span class="n">end_in1</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+
+    <span class="n">start_in2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="n">end_in2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="nb">min</span><span class="p">(</span><span class="n">shape2</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">shape1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">start_in1</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                        <span class="nb">min</span><span class="p">(</span><span class="n">shape2</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">shape1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">start_in1</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+                        <span class="nb">min</span><span class="p">(</span><span class="n">shape2</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">shape1</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">start_in1</span><span class="p">[</span><span class="mi">2</span><span class="p">])))</span>
+    <span class="n">part_in2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[</span><span class="n">start_in2</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">end_in2</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">start_in2</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">end_in2</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">start_in2</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span> <span class="n">end_in2</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+
+    <span class="n">part_in1</span> <span class="o">=</span> <span class="n">part_in2</span>
+
+    <span class="n">start_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">start_index_2</span><span class="p">)</span>
+    <span class="n">end_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="nb">min</span><span class="p">(</span><span class="n">start_new</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">shape2</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">shape1</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                        <span class="nb">min</span><span class="p">(</span><span class="n">start_new</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">shape2</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">shape1</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+                        <span class="nb">min</span><span class="p">(</span><span class="n">start_new</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">shape2</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">shape1</span><span class="p">[</span><span class="mi">2</span><span class="p">])))</span>
+    <span class="n">part_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[</span><span class="n">start_new</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">end_new</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">start_new</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">end_new</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">start_new</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span> <span class="n">end_new</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+
+    <span class="sd">&quot;&quot;&quot; We get the unique lqbels in this area from both existing and new regions. &quot;&quot;&quot;</span>
+    <span class="n">labels_overlap1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">result_data</span><span class="p">[</span><span class="n">part_in1</span><span class="p">])</span>
+    <span class="n">labels_overlap2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">new_region</span><span class="p">[</span><span class="n">part_in2</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">labels_overlap2</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">labels_overlap2</span> <span class="o">==</span> <span class="p">[</span><span class="mf">0.</span><span class="p">]</span> <span class="ow">and</span> <span class="n">labels_overlap1</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">labels_overlap1</span> <span class="o">==</span> <span class="p">[</span><span class="mf">0.</span><span class="p">]:</span>
+        <span class="n">resultfile</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">write_direct</span><span class="p">(</span><span class="n">result_data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="n">index</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">current_maxlabel</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    We create a mapping that maps labels from new region to the labels in existing one if they intersect. </span>
+<span class="sd">    We also stock sizes of corresponding objects in the respective areas. </span>
+<span class="sd">    And we also stock the sizes of intersection of labels. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mapping_overlap</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">sizes_overlap1</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">sizes_overlap2</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">sizes_intercept</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1">#sizes of objects in existing area</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">labels_overlap1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">sizes_overlap1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">result_data</span><span class="p">[</span><span class="n">part_in1</span><span class="p">]</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span>
+
+    <span class="c1">#sizes of objects in new region</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">labels_overlap2</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">sizes_overlap2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">new_region</span><span class="p">[</span><span class="n">part_in2</span><span class="p">]</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span>
+
+    <span class="n">shape_overlap</span> <span class="o">=</span> <span class="n">result_data</span><span class="p">[</span><span class="n">part_in1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="n">comparison</span> <span class="o">=</span> <span class="n">result_data</span><span class="p">[</span><span class="n">part_in1</span><span class="p">]</span> <span class="o">*</span> <span class="n">new_region</span><span class="p">[</span><span class="n">part_in2</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span>
+    <span class="n">intersection_objects_new</span> <span class="o">=</span> <span class="n">comparison</span> <span class="o">*</span> <span class="n">new_region</span><span class="p">[</span><span class="n">part_in2</span><span class="p">]</span> <span class="c1">#region where both labels from the existing and new regions are not zeros, and value is equal to the one from new region</span>
+
+    <span class="c1">#create mapping and measure intersection</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">labels_overlap2</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">match</span><span class="p">,</span> <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">result_data</span><span class="p">[</span><span class="n">part_in1</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">intersection_objects_new</span> <span class="o">==</span> <span class="n">i</span><span class="p">)],</span>
+                                      <span class="n">return_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">size</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">mapping_overlap</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">match</span>
+                <span class="n">sizes_intercept</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">counts</span>
+
+    <span class="sd">&quot;&quot;&quot; We calculate iou for each item in mapping. &quot;&quot;&quot;</span>
+    <span class="n">iou</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">l2</span> <span class="ow">in</span> <span class="n">mapping_overlap</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">mapping_overlap</span><span class="p">[</span><span class="n">l2</span><span class="p">]</span><span class="o">.</span><span class="n">size</span>
+        <span class="n">iou</span><span class="p">[</span><span class="n">l2</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">l1</span> <span class="o">=</span> <span class="n">mapping_overlap</span><span class="p">[</span><span class="n">l2</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">iou</span><span class="p">[</span><span class="n">l2</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sizes_intercept</span><span class="p">[</span><span class="n">l2</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="n">sizes_overlap1</span><span class="p">[</span><span class="n">l1</span><span class="p">]</span> <span class="o">+</span> <span class="n">sizes_overlap2</span><span class="p">[</span><span class="n">l2</span><span class="p">]</span> <span class="o">-</span> <span class="n">sizes_intercept</span><span class="p">[</span><span class="n">l2</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    For each label from new region in intersection: </span>
+<span class="sd">        - if it is in mapping and has corresponding labels in the existing area, it is relabelled to the label from exisiting region if IOU is greater than 0.8. </span>
+<span class="sd">        - if all the corresponding labels in the existing area correspond to IOU less than 0.8, this label from new region is conserved in the area avoiding the intersection with other object from existing region. </span>
+<span class="sd">        - if there was no intersection with any other labels from existing region, we preserve the object. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">l2</span> <span class="ow">in</span> <span class="n">labels_overlap2</span><span class="p">:</span>
+        <span class="n">comparison1</span> <span class="o">=</span> <span class="p">(</span><span class="n">result_data</span><span class="p">[</span><span class="n">part_in1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">new_region</span><span class="p">[</span><span class="n">part_in2</span><span class="p">]</span> <span class="o">==</span> <span class="n">l2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">l2</span> <span class="ow">in</span> <span class="n">mapping_overlap</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="n">mapping_overlap</span><span class="p">[</span><span class="n">l2</span><span class="p">]</span><span class="o">.</span><span class="n">size</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">iou</span><span class="p">[</span><span class="n">l2</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">iou</span><span class="p">[</span><span class="n">l2</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.8</span><span class="p">:</span>
+                    <span class="n">result_data</span><span class="p">[</span><span class="n">part_in1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">comparison1</span><span class="p">,</span> <span class="n">mapping_overlap</span><span class="p">[</span><span class="n">l2</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">result_data</span><span class="p">[</span><span class="n">part_in1</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">result_data</span><span class="p">[</span><span class="n">part_in1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">comparison1</span><span class="p">,</span> <span class="n">l2</span><span class="p">,</span> <span class="n">result_data</span><span class="p">[</span><span class="n">part_in1</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">result_data</span><span class="p">[</span><span class="n">part_in1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">comparison1</span><span class="p">,</span> <span class="n">l2</span><span class="p">,</span> <span class="n">result_data</span><span class="p">[</span><span class="n">part_in1</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result_data</span><span class="p">[</span><span class="n">part_in1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">comparison1</span><span class="p">,</span> <span class="n">l2</span><span class="p">,</span> <span class="n">result_data</span><span class="p">[</span><span class="n">part_in1</span><span class="p">])</span>
+
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    For each label from new region in intersection, if there was a match with a label from the existing region that had IOU greater than 0.8, this label is relabeled in the non-overlapping part.   </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">l2</span> <span class="ow">in</span> <span class="n">mapping_overlap</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">mapping_overlap</span><span class="p">[</span><span class="n">l2</span><span class="p">]</span><span class="o">.</span><span class="n">size</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">iou</span><span class="p">[</span><span class="n">l2</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">iou</span><span class="p">[</span><span class="n">l2</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.8</span><span class="p">:</span>
+            <span class="n">result_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">result_data</span> <span class="o">==</span> <span class="n">l2</span><span class="p">,</span> <span class="n">mapping_overlap</span><span class="p">[</span><span class="n">l2</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">result_data</span><span class="p">)</span>
+
+    <span class="sd">&quot;&quot;&quot;Result is written into the output file directly. &quot;&quot;&quot;</span>
+    <span class="n">resultfile</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">write_direct</span><span class="p">(</span><span class="n">result_data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="n">index</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">current_maxlabel</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="run_stitching"><a class="viewcode-back" href="../index.html#run_stitching.run_stitching">[docs]</a><span class="k">def</span> <span class="nf">run_stitching</span><span class="p">(</span><span class="n">filename_raw</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dataset_raw</span><span class="o">=</span><span class="s1">&#39;/t00000/s00/0/cells&#39;</span><span class="p">,</span> <span class="n">output_folder</span> <span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_folder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">input_file_pattern</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="p">(</span><span class="mi">768</span><span class="p">,</span> <span class="mi">768</span><span class="p">,</span> <span class="mi">768</span><span class="p">),</span> <span class="n">n_threads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="mi">256</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        filename_raw --- full path to inital dataset</span>
+<span class="sd">        dataset_raw --- internal dataset in the h5 file with the raw data</span>
+<span class="sd">        res_path --- output folder</span>
+<span class="sd">        input_folder --- input folder (folder with the results of segmentation that needs to be stitched)</span>
+<span class="sd">        input_file_pattern --- pattern in a form *{z}_{y}_{x}*.h5 where z, y, x are the coordinates of the top left conner of a segmentation cube</span>
+<span class="sd">        step --- steps along z, y, x axis between segmentation cubes; can be either tuple of 3 numbers or one number if it is the same for all the 3 axis</span>
+<span class="sd">        n_threads --- number of threads for multi-threading for rows and columns</span>
+<span class="sd">        overlap --- overlap between 2 cubes</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">filename_raw</span><span class="p">:</span>
+        <span class="n">filename_raw</span> <span class="o">=</span> <span class="s1">&#39;/g/emcf/common/5792_Sars-Cov-2/Exp_070420/FIB-SEM/alignments/20-04-23_S4_area2_Sam/amst_inv_clip_black_bg.h5&#39;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">output_folder</span><span class="p">:</span>
+        <span class="n">output_folder</span> <span class="o">=</span> <span class="s1">&#39;/g/schwab/Viktoriia/src/source/upscaling_results/whole_dataset_mito/&#39;</span>  <span class="c1"># + s4a2_mc_z_y_x_shape.h5</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">input_folder</span><span class="p">:</span>
+        <span class="n">input_folder</span> <span class="o">=</span> <span class="n">output_folder</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">input_file_pattern</span><span class="p">:</span>
+        <span class="n">input_file_pattern</span> <span class="o">=</span> <span class="s1">&#39;s4a2_mc_</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">_1024_1024_1024.h5&#39;</span>
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filename_raw</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="n">dataset_raw</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="c1">#create file with results</span>
+    <span class="n">result_filename</span> <span class="o">=</span> <span class="s1">&#39;result_stitching_file_final.h5&#39;</span>
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">output_folder</span> <span class="o">+</span> <span class="n">result_filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="s1">&#39;gzip&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;uint64&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">step</span><span class="p">)</span> <span class="o">==</span> <span class="nb">tuple</span><span class="p">:</span>
+        <span class="n">step_z</span><span class="p">,</span> <span class="n">step_y</span><span class="p">,</span> <span class="n">step_x</span> <span class="o">=</span> <span class="n">step</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">step_z</span> <span class="o">=</span> <span class="n">step</span>
+        <span class="n">step_y</span> <span class="o">=</span> <span class="n">step</span>
+        <span class="n">step_x</span> <span class="o">=</span> <span class="n">step</span>
+
+
+    <span class="c1">#run the stitching function</span>
+    <span class="n">current_shape</span><span class="p">,</span> <span class="n">maxlabel</span> <span class="o">=</span> <span class="n">stitch_total</span><span class="p">(</span><span class="n">step_x</span><span class="o">=</span><span class="n">step_x</span><span class="p">,</span> <span class="n">step_y</span><span class="o">=</span><span class="n">step_y</span><span class="p">,</span> <span class="n">step_z</span><span class="o">=</span><span class="n">step_z</span><span class="p">,</span> <span class="n">maxlabel</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">total_shape</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span>
+                                           <span class="n">n_workers</span><span class="o">=</span><span class="n">n_threads</span><span class="p">,</span>
+                                           <span class="n">res_path</span><span class="o">=</span><span class="n">output_folder</span><span class="p">,</span> <span class="n">result_filename</span><span class="o">=</span><span class="n">result_filename</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="n">overlap</span><span class="p">,</span>
+                                           <span class="n">input_folder</span><span class="o">=</span><span class="n">input_folder</span><span class="p">,</span> <span class="n">input_file_pattern</span><span class="o">=</span><span class="n">input_file_pattern</span><span class="p">)</span>
+    <span class="k">return</span></div>
+
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Upscaling</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, ViktoriiaGross.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.1.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
