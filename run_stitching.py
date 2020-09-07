@@ -12,17 +12,18 @@ def stitching_row(start_index=(0, 0, 0), row_count=0, step=512, total_shape=(102
                   axis=2, res_path=None, overlap=256,
                   input_folder=None, input_file_pattern=None):
     """
-        This function stitches the input cubes into rows along x axis.
+    This function stitches the input cubes into rows along x axis.
 
-        start_index --- where starts the first cube
-        row_count --- number of current row, needed for result file and for further stitching into columns
-        step --- step between consecutive segmentation cubes along x axis
-        total_shape --- shape of the whole dataset
-        res_path --- output folder
-        overlap --- overlap between consecutive segmentation cubes
-        input_file_pattern --- pattern to get input files
+    :param start_index: where starts the first cube
+    :param row_count: number of current row, needed for result file and for further stitching into columns
+    :param step: step between consecutive segmentation cubes along x axis
+    :param total_shape: shape of the whole dataset
+    :param res_path: output folder
+    :param overlap: overlap between consecutive segmentation cubes
+    :param input_file_pattern: pattern to get input files
+    :return: new maxlabel and shape of the row
 
-        results are writen to output folder under 'result_stitching_row_{row_count}.h5'
+    Results are writen to output folder under 'result_stitching_row_{row_count}.h5'
     """
 
     name = 'result_stitching_row_' + str(row_count) + '.h5'
@@ -104,6 +105,7 @@ def stitching_column_by_rows(z=0, column_index=0, shapes_of_rows=[(1024, 1024, 1
                              overlap=256):
     """
     This function stitches rows into columns along y axis.
+
     :param z: starting z for this column
     :param column_index: number of current column
     :param shapes_of_rows: shapes of rows to be stitched, should be a list of 2 tuples of size 3
@@ -116,7 +118,9 @@ def stitching_column_by_rows(z=0, column_index=0, shapes_of_rows=[(1024, 1024, 1
     :param total_shape: total shape of the inital dataset
     :param res_path: folder for the output files
     :param overlap: overlap between consecutive input cubes of segmentation
+    :return: new maxlabel and shape of the row
 
+    Results are writen to output folder under 'result_stitching_column_{column_index}.h5'
     """
     y = 0
     x = 0
@@ -162,17 +166,20 @@ def stitch_total(step_x=768, step_y=768, step_z=768, maxlabel=0, total_shape=(10
                  res_path=None, result_filename=None, overlap=256,
                  input_folder=None, input_file_pattern=None):
     """
-        step_x, step_y, step_z -- steps used for segmentation calculation along the 3 axis
-        maxlabel -- all new labels will be greater or equal to this one
-        total_shape -- shape of the whole dataset
-        n_workers -- number of threads
-        res_path -- folder for writing results
-        result_filename -- name of the final file with results
-        overlap -- overlap between cubes used for segmentation calculations
-        input_folder -- folder with segmentation results to be stitched
-        input_file_pattern -- pattern '*{}_{}_{}*.h5' where {} correspond to z, y, x
+     This function first stitches cubes into rows, then rows into columns and then the final step --- all together.
 
-        This function first stitches cubes into rows, then rows into columns and then the final step --- all together.
+    :param step_x, step_y, step_z: steps used for segmentation calculation along the 3 axis
+    :param maxlabel: all new labels will be greater or equal to this one
+    :param total_shape: shape of the whole dataset
+    :param n_workers: number of threads
+    :param res_path: folder for writing results
+    :param result_filename: name of the final file with results
+    :param overlap: overlap between cubes used for segmentation calculations
+    :param input_folder: folder with segmentation results to be stitched
+    :param input_file_pattern: pattern '*{}_{}_{}*.h5' where {} correspond to z, y, x
+    :return: new maxlabel and shape of the row
+
+
     """
     nz, ny, nx = total_shape
     row_index = 0
@@ -441,14 +448,15 @@ def stitching_function(result_filename, new_region, current_shape, current_maxla
 def run_stitching(filename_raw=None, dataset_raw='/t00000/s00/0/cells', output_folder =None, input_folder=None,
                   input_file_pattern=None, step=(768, 768, 768), n_threads=1, overlap=256):
     """
-        filename_raw --- full path to inital dataset
-        dataset_raw --- internal dataset in the h5 file with the raw data
-        res_path --- output folder
-        input_folder --- input folder (folder with the results of segmentation that needs to be stitched)
-        input_file_pattern --- pattern in a form *{z}_{y}_{x}*.h5 where z, y, x are the coordinates of the top left conner of a segmentation cube
-        step --- steps along z, y, x axis between segmentation cubes; can be either tuple of 3 numbers or one number if it is the same for all the 3 axis
-        n_threads --- number of threads for multi-threading for rows and columns
-        overlap --- overlap between 2 cubes
+    :param filename_raw: full path to inital dataset
+    :param dataset_raw: internal dataset in the h5 file with the raw data
+    :param res_path: output folder
+    :param input_folder: input folder (folder with the results of segmentation that needs to be stitched)
+    :param input_file_pattern: pattern in a form *{z}_{y}_{x}*.h5 where z, y, x are the coordinates of the top left conner of a segmentation cube
+    :param step: steps along z, y, x axis between segmentation cubes; can be either tuple of 3 numbers or one number if it is the same for all the 3 axis
+    :param n_threads: number of threads for multi-threading for rows and columns
+    :param overlap: overlap between 2 cubes
+    :return:
     """
     if not filename_raw:
         filename_raw = '/g/emcf/common/5792_Sars-Cov-2/Exp_070420/FIB-SEM/alignments/20-04-23_S4_area2_Sam/amst_inv_clip_black_bg.h5'

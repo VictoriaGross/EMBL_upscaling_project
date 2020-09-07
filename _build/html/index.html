@@ -46,47 +46,77 @@
 <span class="target" id="module-run_stitching"></span><dl class="py function">
 <dt id="run_stitching.run_stitching">
 <code class="sig-prename descclassname">run_stitching.</code><code class="sig-name descname">run_stitching</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename_raw</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dataset_raw</span><span class="o">=</span><span class="default_value">'/t00000/s00/0/cells'</span></em>, <em class="sig-param"><span class="n">output_folder</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_folder</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_file_pattern</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">step</span><span class="o">=</span><span class="default_value">768, 768, 768</span></em>, <em class="sig-param"><span class="n">n_threads</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">overlap</span><span class="o">=</span><span class="default_value">256</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/run_stitching.html#run_stitching"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#run_stitching.run_stitching" title="Permalink to this definition">¶</a></dt>
-<dd><p>filename_raw — full path to inital dataset
-dataset_raw — internal dataset in the h5 file with the raw data
-res_path — output folder
-input_folder — input folder (folder with the results of segmentation that needs to be stitched)
-input_file_pattern — pattern in a form <em>{z}_{y}_{x}</em>.h5 where z, y, x are the coordinates of the top left conner of a segmentation cube
-step — steps along z, y, x axis between segmentation cubes; can be either tuple of 3 numbers or one number if it is the same for all the 3 axis
-n_threads — number of threads for multi-threading for rows and columns
-overlap — overlap between 2 cubes</p>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename_raw</strong> – full path to inital dataset</p></li>
+<li><p><strong>dataset_raw</strong> – internal dataset in the h5 file with the raw data</p></li>
+<li><p><strong>res_path</strong> – output folder</p></li>
+<li><p><strong>input_folder</strong> – input folder (folder with the results of segmentation that needs to be stitched)</p></li>
+<li><p><strong>input_file_pattern</strong> – pattern in a form <em>{z}_{y}_{x}</em>.h5 where z, y, x are the coordinates of the top left conner of a segmentation cube</p></li>
+<li><p><strong>step</strong> – steps along z, y, x axis between segmentation cubes; can be either tuple of 3 numbers or one number if it is the same for all the 3 axis</p></li>
+<li><p><strong>n_threads</strong> – number of threads for multi-threading for rows and columns</p></li>
+<li><p><strong>overlap</strong> – overlap between 2 cubes</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt id="run_stitching.stitch_total">
 <code class="sig-prename descclassname">run_stitching.</code><code class="sig-name descname">stitch_total</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">step_x</span><span class="o">=</span><span class="default_value">768</span></em>, <em class="sig-param"><span class="n">step_y</span><span class="o">=</span><span class="default_value">768</span></em>, <em class="sig-param"><span class="n">step_z</span><span class="o">=</span><span class="default_value">768</span></em>, <em class="sig-param"><span class="n">maxlabel</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">total_shape</span><span class="o">=</span><span class="default_value">1024, 2304, 1792</span></em>, <em class="sig-param"><span class="n">n_workers</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">res_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">result_filename</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">overlap</span><span class="o">=</span><span class="default_value">256</span></em>, <em class="sig-param"><span class="n">input_folder</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_file_pattern</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/run_stitching.html#stitch_total"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#run_stitching.stitch_total" title="Permalink to this definition">¶</a></dt>
-<dd><p>step_x, step_y, step_z – steps used for segmentation calculation along the 3 axis
-maxlabel – all new labels will be greater or equal to this one
-total_shape – shape of the whole dataset
-n_workers – number of threads
-res_path – folder for writing results
-result_filename – name of the final file with results
-overlap – overlap between cubes used for segmentation calculations
-input_folder – folder with segmentation results to be stitched
-input_file_pattern – pattern ‘<em>{}_{}_{}</em>.h5’ where {} correspond to z, y, x</p>
-<p>This function first stitches cubes into rows, then rows into columns and then the final step — all together.</p>
+<dd><blockquote>
+<div><p>This function first stitches cubes into rows, then rows into columns and then the final step — all together.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>step_y</strong><strong>, </strong><strong>step_z</strong> (<em>step_x</em><em>,</em>) – steps used for segmentation calculation along the 3 axis</p></li>
+<li><p><strong>maxlabel</strong> – all new labels will be greater or equal to this one</p></li>
+<li><p><strong>total_shape</strong> – shape of the whole dataset</p></li>
+<li><p><strong>n_workers</strong> – number of threads</p></li>
+<li><p><strong>res_path</strong> – folder for writing results</p></li>
+<li><p><strong>result_filename</strong> – name of the final file with results</p></li>
+<li><p><strong>overlap</strong> – overlap between cubes used for segmentation calculations</p></li>
+<li><p><strong>input_folder</strong> – folder with segmentation results to be stitched</p></li>
+<li><p><strong>input_file_pattern</strong> – pattern ‘<em>{}_{}_{}</em>.h5’ where {} correspond to z, y, x</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>new maxlabel and shape of the row</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt id="run_stitching.stitching_column_by_rows">
 <code class="sig-prename descclassname">run_stitching.</code><code class="sig-name descname">stitching_column_by_rows</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">column_index</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">shapes_of_rows</span><span class="o">=</span><span class="default_value">[1024, 1024, 1024]</span></em>, <em class="sig-param"><span class="n">maxlabel</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">start_row_index</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">end_row_index</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">step_z</span><span class="o">=</span><span class="default_value">768</span></em>, <em class="sig-param"><span class="n">step_y</span><span class="o">=</span><span class="default_value">768</span></em>, <em class="sig-param"><span class="n">step_x</span><span class="o">=</span><span class="default_value">768</span></em>, <em class="sig-param"><span class="n">total_shape</span><span class="o">=</span><span class="default_value">1024, 2304, 1792</span></em>, <em class="sig-param"><span class="n">res_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">overlap</span><span class="o">=</span><span class="default_value">256</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/run_stitching.html#stitching_column_by_rows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#run_stitching.stitching_column_by_rows" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function stitches rows into columns along y axis.
-:param z: starting z for this column
-:param column_index: number of current column
-:param shapes_of_rows: shapes of rows to be stitched, should be a list of 2 tuples of size 3
-:param maxlabel: starting label for this column
-:param start_row_index: index of the first row in the selection of rws to be stitched together
-:param end_row_index: index of the last row in the selection of rws to be stitched together (not included in result)
-:param step_z: step along z axis
-:param step_y: step along y axis
-:param step_x: step along x axis
-:param total_shape: total shape of the inital dataset
-:param res_path: folder for the output files
-:param overlap: overlap between consecutive input cubes of segmentation</p>
+<dd><p>This function stitches rows into columns along y axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> – starting z for this column</p></li>
+<li><p><strong>column_index</strong> – number of current column</p></li>
+<li><p><strong>shapes_of_rows</strong> – shapes of rows to be stitched, should be a list of 2 tuples of size 3</p></li>
+<li><p><strong>maxlabel</strong> – starting label for this column</p></li>
+<li><p><strong>start_row_index</strong> – index of the first row in the selection of rws to be stitched together</p></li>
+<li><p><strong>end_row_index</strong> – index of the last row in the selection of rws to be stitched together (not included in result)</p></li>
+<li><p><strong>step_z</strong> – step along z axis</p></li>
+<li><p><strong>step_y</strong> – step along y axis</p></li>
+<li><p><strong>step_x</strong> – step along x axis</p></li>
+<li><p><strong>total_shape</strong> – total shape of the inital dataset</p></li>
+<li><p><strong>res_path</strong> – folder for the output files</p></li>
+<li><p><strong>overlap</strong> – overlap between consecutive input cubes of segmentation</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>new maxlabel and shape of the row</p>
+</dd>
+</dl>
+<p>Results are writen to output folder under ‘result_stitching_column_{column_index}.h5’</p>
 </dd></dl>
 
 <dl class="py function">
@@ -114,14 +144,23 @@ input_file_pattern – pattern ‘<em>{}_{}_{}</em>.h5’ where {} correspond to
 <dt id="run_stitching.stitching_row">
 <code class="sig-prename descclassname">run_stitching.</code><code class="sig-name descname">stitching_row</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">start_index</span><span class="o">=</span><span class="default_value">0, 0, 0</span></em>, <em class="sig-param"><span class="n">row_count</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">step</span><span class="o">=</span><span class="default_value">512</span></em>, <em class="sig-param"><span class="n">total_shape</span><span class="o">=</span><span class="default_value">1024, 2304, 1792</span></em>, <em class="sig-param"><span class="n">maxlabel</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">res_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">overlap</span><span class="o">=</span><span class="default_value">256</span></em>, <em class="sig-param"><span class="n">input_folder</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_file_pattern</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/run_stitching.html#stitching_row"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#run_stitching.stitching_row" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function stitches the input cubes into rows along x axis.</p>
-<p>start_index — where starts the first cube
-row_count — number of current row, needed for result file and for further stitching into columns
-step — step between consecutive segmentation cubes along x axis
-total_shape — shape of the whole dataset
-res_path — output folder
-overlap — overlap between consecutive segmentation cubes
-input_file_pattern — pattern to get input files</p>
-<p>results are writen to output folder under ‘result_stitching_row_{row_count}.h5’</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>start_index</strong> – where starts the first cube</p></li>
+<li><p><strong>row_count</strong> – number of current row, needed for result file and for further stitching into columns</p></li>
+<li><p><strong>step</strong> – step between consecutive segmentation cubes along x axis</p></li>
+<li><p><strong>total_shape</strong> – shape of the whole dataset</p></li>
+<li><p><strong>res_path</strong> – output folder</p></li>
+<li><p><strong>overlap</strong> – overlap between consecutive segmentation cubes</p></li>
+<li><p><strong>input_file_pattern</strong> – pattern to get input files</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>new maxlabel and shape of the row</p>
+</dd>
+</dl>
+<p>Results are writen to output folder under ‘result_stitching_row_{row_count}.h5’</p>
 </dd></dl>
 
 </div>

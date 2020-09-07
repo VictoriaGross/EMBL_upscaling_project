@@ -46,17 +46,18 @@
                   <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">res_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
                   <span class="n">input_folder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_file_pattern</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        This function stitches the input cubes into rows along x axis.</span>
+<span class="sd">    This function stitches the input cubes into rows along x axis.</span>
 
-<span class="sd">        start_index --- where starts the first cube</span>
-<span class="sd">        row_count --- number of current row, needed for result file and for further stitching into columns</span>
-<span class="sd">        step --- step between consecutive segmentation cubes along x axis</span>
-<span class="sd">        total_shape --- shape of the whole dataset</span>
-<span class="sd">        res_path --- output folder</span>
-<span class="sd">        overlap --- overlap between consecutive segmentation cubes</span>
-<span class="sd">        input_file_pattern --- pattern to get input files</span>
+<span class="sd">    :param start_index: where starts the first cube</span>
+<span class="sd">    :param row_count: number of current row, needed for result file and for further stitching into columns</span>
+<span class="sd">    :param step: step between consecutive segmentation cubes along x axis</span>
+<span class="sd">    :param total_shape: shape of the whole dataset</span>
+<span class="sd">    :param res_path: output folder</span>
+<span class="sd">    :param overlap: overlap between consecutive segmentation cubes</span>
+<span class="sd">    :param input_file_pattern: pattern to get input files</span>
+<span class="sd">    :return: new maxlabel and shape of the row</span>
 
-<span class="sd">        results are writen to output folder under &#39;result_stitching_row_{row_count}.h5&#39;</span>
+<span class="sd">    Results are writen to output folder under &#39;result_stitching_row_{row_count}.h5&#39;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;result_stitching_row_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">row_count</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span>
@@ -138,6 +139,7 @@
                              <span class="n">overlap</span><span class="o">=</span><span class="mi">256</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This function stitches rows into columns along y axis.</span>
+
 <span class="sd">    :param z: starting z for this column</span>
 <span class="sd">    :param column_index: number of current column</span>
 <span class="sd">    :param shapes_of_rows: shapes of rows to be stitched, should be a list of 2 tuples of size 3</span>
@@ -150,7 +152,9 @@
 <span class="sd">    :param total_shape: total shape of the inital dataset</span>
 <span class="sd">    :param res_path: folder for the output files</span>
 <span class="sd">    :param overlap: overlap between consecutive input cubes of segmentation</span>
+<span class="sd">    :return: new maxlabel and shape of the row</span>
 
+<span class="sd">    Results are writen to output folder under &#39;result_stitching_column_{column_index}.h5&#39;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">y</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span>
@@ -196,17 +200,20 @@
                  <span class="n">res_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">result_filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
                  <span class="n">input_folder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_file_pattern</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        step_x, step_y, step_z -- steps used for segmentation calculation along the 3 axis</span>
-<span class="sd">        maxlabel -- all new labels will be greater or equal to this one</span>
-<span class="sd">        total_shape -- shape of the whole dataset</span>
-<span class="sd">        n_workers -- number of threads</span>
-<span class="sd">        res_path -- folder for writing results</span>
-<span class="sd">        result_filename -- name of the final file with results</span>
-<span class="sd">        overlap -- overlap between cubes used for segmentation calculations</span>
-<span class="sd">        input_folder -- folder with segmentation results to be stitched</span>
-<span class="sd">        input_file_pattern -- pattern &#39;*{}_{}_{}*.h5&#39; where {} correspond to z, y, x</span>
+<span class="sd">     This function first stitches cubes into rows, then rows into columns and then the final step --- all together.</span>
 
-<span class="sd">        This function first stitches cubes into rows, then rows into columns and then the final step --- all together.</span>
+<span class="sd">    :param step_x, step_y, step_z: steps used for segmentation calculation along the 3 axis</span>
+<span class="sd">    :param maxlabel: all new labels will be greater or equal to this one</span>
+<span class="sd">    :param total_shape: shape of the whole dataset</span>
+<span class="sd">    :param n_workers: number of threads</span>
+<span class="sd">    :param res_path: folder for writing results</span>
+<span class="sd">    :param result_filename: name of the final file with results</span>
+<span class="sd">    :param overlap: overlap between cubes used for segmentation calculations</span>
+<span class="sd">    :param input_folder: folder with segmentation results to be stitched</span>
+<span class="sd">    :param input_file_pattern: pattern &#39;*{}_{}_{}*.h5&#39; where {} correspond to z, y, x</span>
+<span class="sd">    :return: new maxlabel and shape of the row</span>
+
+
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">nz</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="n">total_shape</span>
     <span class="n">row_index</span> <span class="o">=</span> <span class="mi">0</span>
@@ -475,14 +482,15 @@
 <div class="viewcode-block" id="run_stitching"><a class="viewcode-back" href="../index.html#run_stitching.run_stitching">[docs]</a><span class="k">def</span> <span class="nf">run_stitching</span><span class="p">(</span><span class="n">filename_raw</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dataset_raw</span><span class="o">=</span><span class="s1">&#39;/t00000/s00/0/cells&#39;</span><span class="p">,</span> <span class="n">output_folder</span> <span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_folder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">input_file_pattern</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="p">(</span><span class="mi">768</span><span class="p">,</span> <span class="mi">768</span><span class="p">,</span> <span class="mi">768</span><span class="p">),</span> <span class="n">n_threads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="mi">256</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        filename_raw --- full path to inital dataset</span>
-<span class="sd">        dataset_raw --- internal dataset in the h5 file with the raw data</span>
-<span class="sd">        res_path --- output folder</span>
-<span class="sd">        input_folder --- input folder (folder with the results of segmentation that needs to be stitched)</span>
-<span class="sd">        input_file_pattern --- pattern in a form *{z}_{y}_{x}*.h5 where z, y, x are the coordinates of the top left conner of a segmentation cube</span>
-<span class="sd">        step --- steps along z, y, x axis between segmentation cubes; can be either tuple of 3 numbers or one number if it is the same for all the 3 axis</span>
-<span class="sd">        n_threads --- number of threads for multi-threading for rows and columns</span>
-<span class="sd">        overlap --- overlap between 2 cubes</span>
+<span class="sd">    :param filename_raw: full path to inital dataset</span>
+<span class="sd">    :param dataset_raw: internal dataset in the h5 file with the raw data</span>
+<span class="sd">    :param res_path: output folder</span>
+<span class="sd">    :param input_folder: input folder (folder with the results of segmentation that needs to be stitched)</span>
+<span class="sd">    :param input_file_pattern: pattern in a form *{z}_{y}_{x}*.h5 where z, y, x are the coordinates of the top left conner of a segmentation cube</span>
+<span class="sd">    :param step: steps along z, y, x axis between segmentation cubes; can be either tuple of 3 numbers or one number if it is the same for all the 3 axis</span>
+<span class="sd">    :param n_threads: number of threads for multi-threading for rows and columns</span>
+<span class="sd">    :param overlap: overlap between 2 cubes</span>
+<span class="sd">    :return:</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">filename_raw</span><span class="p">:</span>
         <span class="n">filename_raw</span> <span class="o">=</span> <span class="s1">&#39;/g/emcf/common/5792_Sars-Cov-2/Exp_070420/FIB-SEM/alignments/20-04-23_S4_area2_Sam/amst_inv_clip_black_bg.h5&#39;</span>
