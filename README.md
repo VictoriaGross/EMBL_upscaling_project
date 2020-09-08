@@ -59,3 +59,5 @@ run_stitching(
     step=(256, 256, 256), n_threads=4, overlap=256)
 ```
 or use example in `sv_stitching.py`
+
+Full list of parameters with explanations can be found in the code or html documentation.      
