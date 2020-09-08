@@ -114,6 +114,7 @@ def concat_supervoxels(path_sv = None, stitched_sv_path = None, shape = None, st
 
     """
     Concatenation of center cubes
+
     :param path_sv: path to folder with input supervoxels files
     :param stitched_sv_path: path to resulting file with stitched supervoxels
     :param shape: shape of the raw dataset

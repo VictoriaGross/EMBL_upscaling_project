@@ -92,6 +92,29 @@
 </dd></dl>
 
 <dl class="py function">
+<dt id="run_stitching.stitching_row">
+<code class="sig-prename descclassname">run_stitching.</code><code class="sig-name descname">stitching_row</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">start_index</span><span class="o">=</span><span class="default_value">0, 0, 0</span></em>, <em class="sig-param"><span class="n">row_count</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">step</span><span class="o">=</span><span class="default_value">512</span></em>, <em class="sig-param"><span class="n">total_shape</span><span class="o">=</span><span class="default_value">1024, 2304, 1792</span></em>, <em class="sig-param"><span class="n">maxlabel</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">res_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">overlap</span><span class="o">=</span><span class="default_value">256</span></em>, <em class="sig-param"><span class="n">input_folder</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_file_pattern</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/run_stitching.html#stitching_row"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#run_stitching.stitching_row" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function stitches the input cubes into rows along x axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>start_index</strong> – where starts the first cube</p></li>
+<li><p><strong>row_count</strong> – number of current row, needed for result file and for further stitching into columns</p></li>
+<li><p><strong>step</strong> – step between consecutive segmentation cubes along x axis</p></li>
+<li><p><strong>total_shape</strong> – shape of the whole dataset</p></li>
+<li><p><strong>res_path</strong> – output folder</p></li>
+<li><p><strong>overlap</strong> – overlap between consecutive segmentation cubes</p></li>
+<li><p><strong>input_file_pattern</strong> – pattern to get input files</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>new maxlabel and shape of the row</p>
+</dd>
+</dl>
+<p>Results are writen to output folder under ‘result_stitching_row_{row_count}.h5’</p>
+</dd></dl>
+
+<dl class="py function">
 <dt id="run_stitching.stitching_column_by_rows">
 <code class="sig-prename descclassname">run_stitching.</code><code class="sig-name descname">stitching_column_by_rows</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">column_index</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">shapes_of_rows</span><span class="o">=</span><span class="default_value">[1024, 1024, 1024]</span></em>, <em class="sig-param"><span class="n">maxlabel</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">start_row_index</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">end_row_index</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">step_z</span><span class="o">=</span><span class="default_value">768</span></em>, <em class="sig-param"><span class="n">step_y</span><span class="o">=</span><span class="default_value">768</span></em>, <em class="sig-param"><span class="n">step_x</span><span class="o">=</span><span class="default_value">768</span></em>, <em class="sig-param"><span class="n">total_shape</span><span class="o">=</span><span class="default_value">1024, 2304, 1792</span></em>, <em class="sig-param"><span class="n">res_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">overlap</span><span class="o">=</span><span class="default_value">256</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/run_stitching.html#stitching_column_by_rows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#run_stitching.stitching_column_by_rows" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function stitches rows into columns along y axis.</p>
@@ -140,27 +163,114 @@
 </dl>
 </dd></dl>
 
-<dl class="py function">
-<dt id="run_stitching.stitching_row">
-<code class="sig-prename descclassname">run_stitching.</code><code class="sig-name descname">stitching_row</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">start_index</span><span class="o">=</span><span class="default_value">0, 0, 0</span></em>, <em class="sig-param"><span class="n">row_count</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">step</span><span class="o">=</span><span class="default_value">512</span></em>, <em class="sig-param"><span class="n">total_shape</span><span class="o">=</span><span class="default_value">1024, 2304, 1792</span></em>, <em class="sig-param"><span class="n">maxlabel</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">res_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">overlap</span><span class="o">=</span><span class="default_value">256</span></em>, <em class="sig-param"><span class="n">input_folder</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_file_pattern</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/run_stitching.html#stitching_row"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#run_stitching.stitching_row" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function stitches the input cubes into rows along x axis.</p>
-<dl class="field-list simple">
+<span class="target" id="module-run_multicut"></span><dl class="py function">
+<dt id="run_multicut.run_whole_process">
+<code class="sig-prename descclassname">run_multicut.</code><code class="sig-name descname">run_whole_process</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">output_folder</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_raw_files_train</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_mem_files_train</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_sv_files_train</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_gt_files_train</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_raw_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dataset_raw</span><span class="o">=</span><span class="default_value">'/t00000/s00/0/cells'</span></em>, <em class="sig-param"><span class="n">input_mem_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">need_stitching_supervoxels</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">input_sv_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sv_pattern</span><span class="o">=</span><span class="default_value">'{}_{}_{}.h5'</span></em>, <em class="sig-param"><span class="n">step_sv</span><span class="o">=</span><span class="default_value">256, 256, 256</span></em>, <em class="sig-param"><span class="n">overlap_sv</span><span class="o">=</span><span class="default_value">256, 256, 256</span></em>, <em class="sig-param"><span class="n">smart_stitch_sv</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">sv_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">n_threads</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">beta</span><span class="o">=</span><span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">result_pattern</span><span class="o">=</span><span class="default_value">'mc_{}_{}_{}.h5'</span></em>, <em class="sig-param"><span class="n">segm_cube_size</span><span class="o">=</span><span class="default_value">1024, 1024, 1024</span></em>, <em class="sig-param"><span class="n">segm_overlap</span><span class="o">=</span><span class="default_value">256, 256, 256</span></em>, <em class="sig-param"><span class="n">segm_block_size</span><span class="o">=</span><span class="default_value">[256, 256, 256]</span></em>, <em class="sig-param"><span class="n">segm_start_index</span><span class="o">=</span><span class="default_value">0, 0, 0</span></em>, <em class="sig-param"><span class="n">segm_end_index</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">need_stitching_results</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">result_filename_stitched</span><span class="o">=</span><span class="default_value">'result_file_stitching_final.h5'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/run_multicut.html#run_whole_process"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#run_multicut.run_whole_process" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>start_index</strong> – where starts the first cube</p></li>
-<li><p><strong>row_count</strong> – number of current row, needed for result file and for further stitching into columns</p></li>
-<li><p><strong>step</strong> – step between consecutive segmentation cubes along x axis</p></li>
-<li><p><strong>total_shape</strong> – shape of the whole dataset</p></li>
-<li><p><strong>res_path</strong> – output folder</p></li>
-<li><p><strong>overlap</strong> – overlap between consecutive segmentation cubes</p></li>
-<li><p><strong>input_file_pattern</strong> – pattern to get input files</p></li>
+<li><p><strong>output_folder</strong> – path to folder where to put all the intermediate files and the results</p></li>
+<li><p><strong>input_raw_files_train</strong> – raw file or files for training (either a string or a list)</p></li>
+<li><p><strong>input_mem_files_train</strong> – membrane prediction for the corresponding raw files for training</p></li>
+<li><p><strong>input_sv_files_train</strong> – supervoxels for the corresponding files for training</p></li>
+<li><p><strong>input_gt_files_train</strong> – ground truth for the corresponding files for training</p></li>
+<li><p><strong>input_raw_file</strong> – path to the raw dataset that needs segmentation</p></li>
+<li><p><strong>dataset_raw</strong> – internal dataset</p></li>
+<li><p><strong>input_mem_file</strong> – membrane prediction</p></li>
+<li><p><strong>need_stitching_supervoxels</strong> – True if cubes of supervoxels need to be stitched to get one file covering the whole dataset.
+if False, provide path to the already stitched file in sv_path</p></li>
+<li><p><strong>input_sv_path</strong> – if need to stitch supervoxels, path to folder with blocks of supervoxels</p></li>
+<li><p><strong>sv_pattern</strong> – if need to stitch supervoxels, pattern of supervoxel file names ({z}_{y}_{x}.h5)</p></li>
+<li><p><strong>step_sv</strong> – steps along each axis used for generation of supervoxels</p></li>
+<li><p><strong>overlap_sv</strong> – size of the overlap along each axis used for generation of supervoxels</p></li>
+<li><p><strong>smart_stitch_sv</strong> – if True, stitching will be done in a way to oversee overlapping objects in the overlap zone; if False, center cubes will be concatenated</p></li>
+<li><p><strong>sv_path</strong> – path to stitched supervoxels file</p></li>
+<li><p><strong>n_threads</strong> – number of threads for multithreading</p></li>
+<li><p><strong>beta</strong> – value of beta parameter for multicut segmentation</p></li>
+<li><p><strong>result_pattern</strong> – pattern for writing results (mc_{z}_{y}_{x}.h5)</p></li>
+<li><p><strong>segm_cube_size</strong> – size of cubes to be used for segmentation (1024, 1024, 1024)</p></li>
+<li><p><strong>segm_overlap</strong> – size of overlap to leave along each axis while calculating segmentation</p></li>
+<li><p><strong>segm_block_size</strong> – block size for blockwise multicut (256, 256, 256), must not be greater than cube size.</p></li>
+<li><p><strong>segm_start_index</strong> – where to start segmentation, by default at (0,0,0)</p></li>
+<li><p><strong>segm_end_index</strong> – where to end segmentation, by default at the end of dataset</p></li>
+<li><p><strong>need_stitching_results</strong> – if True results will be stitched</p></li>
+<li><p><strong>result_filename_stitched</strong> – filename for the stitched file, by default ‘result_file_stitching_final.h5’</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>new maxlabel and shape of the row</p>
+<dd class="field-even"><p></p>
 </dd>
 </dl>
-<p>Results are writen to output folder under ‘result_stitching_row_{row_count}.h5’</p>
+<p>First we train random forest model. Then if needed stitch supervoxels. Then we run multicut segmentation. Then if needed stitch the results.</p>
+<p>There are two possibilities to stitch supervoxels – concatenate centers or stitch with regards to overlapping region. Last one takes a long time and needs a lot of memmory.</p>
+<p>Multicut is done by cubes, with given overlap by the use of blockwise segmentation with given size of blocks.</p>
+<p>Stitching results can also be done here. But this would mean additional time and memory.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="run_multicut.get_rf_model">
+<code class="sig-prename descclassname">run_multicut.</code><code class="sig-name descname">get_rf_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">output_folder</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_raw_files</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_mem_files</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_sv_files</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_gt_files</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/run_multicut.html#get_rf_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#run_multicut.get_rf_model" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_folder</strong> – path to folder where to write a file with the model</p></li>
+<li><p><strong>input_raw_files</strong> – list or just string describing path(s) to raw file(s) for training</p></li>
+<li><p><strong>input_mem_files</strong> – list or just string describing path(s) to membrane prediction file(s) for training</p></li>
+<li><p><strong>input_sv_files</strong> – list or just string describing path(s) to supervoxels file(s) for training</p></li>
+<li><p><strong>input_gt_files</strong> – list or just string describing path(s) to griund truth  file(s) for training</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Random Forest model</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="run_multicut.stitch_supervoxels">
+<code class="sig-prename descclassname">run_multicut.</code><code class="sig-name descname">stitch_supervoxels</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_sv_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sv_pattern</span><span class="o">=</span><span class="default_value">'{}_{}_{}.h5'</span></em>, <em class="sig-param"><span class="n">input_raw_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dataset_raw</span><span class="o">=</span><span class="default_value">'/t00000/s00/0/cells'</span></em>, <em class="sig-param"><span class="n">output_folder</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">smart_stitch</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">step</span><span class="o">=</span><span class="default_value">256, 256, 256</span></em>, <em class="sig-param"><span class="n">n_threads</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">overlap</span><span class="o">=</span><span class="default_value">256</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/run_multicut.html#stitch_supervoxels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#run_multicut.stitch_supervoxels" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_sv_path</strong> – path to folder with the input files with supervoxels</p></li>
+<li><p><strong>sv_pattern</strong> – pattern of filenames like <em>{z}_{y}_{x}</em>.h5 to access blocks of supervoxels starting at z, y, x</p></li>
+<li><p><strong>input_raw_file</strong> – path to the file with the initial raw dataset</p></li>
+<li><p><strong>dataset_raw</strong> – internal dataset</p></li>
+<li><p><strong>output_folder</strong> – path where to put results, stitching will be put into output_folder + ‘sv_stitching/’</p></li>
+<li><p><strong>smart_stitch</strong> – if True, stitching will be done in a way to oversee overlapping objects in the overlap zone; if False, center cubes will be concatenated</p></li>
+<li><p><strong>step</strong> – steps along the 3 axis (tuple)</p></li>
+<li><p><strong>n_threads</strong> – number of threads if doing smart stitching</p></li>
+<li><p><strong>overlap</strong> – overlapping size (int)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>full path to stitched file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="run_multicut.mc_segmentation">
+<code class="sig-prename descclassname">run_multicut.</code><code class="sig-name descname">mc_segmentation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">bb</span></em>, <em class="sig-param"><span class="n">mc_blocks</span><span class="o">=</span><span class="default_value">[256, 256, 256]</span></em>, <em class="sig-param"><span class="n">filename_raw</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dataset_raw</span><span class="o">=</span><span class="default_value">'/t00000/s00/0/cells'</span></em>, <em class="sig-param"><span class="n">filename_mem</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filename_sv</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">rf</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">n_threads</span><span class="o">=</span><span class="default_value">4</span></em>, <em class="sig-param"><span class="n">beta</span><span class="o">=</span><span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">error_file</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/run_multicut.html#mc_segmentation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#run_multicut.mc_segmentation" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bb</strong> – numpy slice that needs to be segmented</p></li>
+<li><p><strong>mc_blocks</strong> – size of block for blockwise segmentation, list of size 3</p></li>
+<li><p><strong>filename_raw</strong> – path to file with raw data</p></li>
+<li><p><strong>dataset_raw</strong> – internal dataset</p></li>
+<li><p><strong>filename_mem</strong> – path to file with membrane prediction</p></li>
+<li><p><strong>filename_sv</strong> – path to file with supervoxels (stitched)</p></li>
+<li><p><strong>rf</strong> – RandomForest model</p></li>
+<li><p><strong>n_threads</strong> – number of threads (for multithreading)</p></li>
+<li><p><strong>beta</strong> – beta value</p></li>
+<li><p><strong>error_file</strong> – path to txt file where to write slice of the cube (bb) in case of runtimeerror</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>segmentation</p>
+</dd>
+</dl>
 </dd></dl>
 
 </div>

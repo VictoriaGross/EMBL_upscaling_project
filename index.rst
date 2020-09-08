@@ -20,4 +20,14 @@ Indices and tables
 * :ref:`search`
 
 .. automodule:: run_stitching
-   :members:
+.. autofunction:: run_stitching
+.. autofunction:: stitch_total
+.. autofunction:: stitching_row
+.. autofunction:: stitching_column_by_rows
+.. autofunction:: stitching_function
+
+.. automodule:: run_multicut
+.. autofunction:: run_whole_process
+.. autofunction:: get_rf_model
+.. autofunction:: stitch_supervoxels
+.. autofunction:: mc_segmentation
