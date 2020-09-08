@@ -27,7 +27,8 @@ Example:
 from run_multicut import * 
 
 run_whole_process(output_folder = '...',
-                  input_raw_files_train = '...', input_mem_files_train = '...', input_sv_files_train = '...', input_gt_files_train = '...',
+                  input_raw_files_train = '...', input_mem_files_train = '...', input_sv_files_train = '...', 
+                  input_gt_files_train = '...',
                   
                   input_raw_file = '...', dataset_raw = 'data', input_mem_file = '...',
 
@@ -57,3 +58,4 @@ run_stitching(
     input_file_pattern = pattern,
     step=(256, 256, 256), n_threads=4, overlap=256)
 ```
+or use example in `sv_stitching.py`
