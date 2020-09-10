@@ -43,7 +43,7 @@ run_whole_process(output_folder = '...',
 ```
 or use example in 'run_mc_s4a2_mito_new_gt.py'. 
 
-Parameters | Explanation 
+Parameters | Description 
 -----------|------------
 output_folder | path to folder where to put all the intermediate files and the results
 input_raw_files_train | raw file or files for training (either a string or a list)
@@ -53,14 +53,13 @@ input_gt_files_train | ground truth for the corresponding files for training
 input_raw_file | path to the raw dataset that needs segmentation
 dataset_raw | internal dataset
 input_mem_file | membrane prediction
-need_stitching_supervoxels | True if cubes of supervoxels need to be stitched to get one file covering the whole dataset.
-            if False, provide path to the already stitched file in sv_path
+need_stitching_supervoxels | True if cubes of supervoxels need to be stitched to get one file covering the whole dataset. If False, provide path to the already stitched file in sv_path
 input_sv_path | if need to stitch supervoxels, path to folder with blocks of supervoxels
 sv_pattern | if need to stitch supervoxels, pattern of supervoxel file names ({z}_{y}_{x}.h5)
 step_sv | steps along each axis used for generation of supervoxels
 overlap_sv | size of the overlap along each axis used for generation of supervoxels
 smart_stitch_sv | if True, stitching will be done in a way to oversee overlapping objects in the overlap zone; if False, center cubes will be concatenated
-sv_path | path to stitched supervoxels file
+sv_path | path to stitched supervoxels file if need_stitching_supervoxels is False 
 n_threads | number of threads for multithreading
 beta | value of beta parameter for multicut segmentation
 result_pattern | pattern for writing results (mc_{z}_{y}_{x}.h5)
@@ -94,7 +93,7 @@ run_stitching(
 ```
 or use example in `sv_stitching.py`
 
-Parameters | Explanation 
+Parameters | Description 
 -----------|------------
 filename_raw | full path to inital dataset
 dataset_raw | internal dataset in the h5 file with the raw data
