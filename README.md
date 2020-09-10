@@ -7,14 +7,18 @@ Main files to use are:
 run_multicut.py
 run_mc_s4a2_mito_new_gt.py
 run_stiching.py
+```
+Examples of usage: 
+```
+run_mc_s4a2_mito_new_gt.py
 sv_stitching.py
 ```
-
 There is an html documentation for these two source files: 
 ```
 _build/html/index.html
 ```
-
+## Scripts to run 
+`run_mc_s4a2_mito_new_gt.sh` is almost ready to be put on cluster (need to change email address, eventually change path to python code). It would run `run_mc_s4a2_mito_new_gt.py` to do multicut and then stitching results. Change path for output if you want. 
 ## Usage 
 To run code you would need following packages installed: 
 ```
@@ -71,7 +75,7 @@ smart_stitch_sv | if True, stitching will be done in a way to oversee overlappin
 sv_path | path to stitched supervoxels file if need_stitching_supervoxels is False 
 n_threads | number of threads for multithreading
 beta | value of beta parameter for multicut segmentation
-result_pattern | pattern for writing results (mc_{z}_{y}_{x}.h5)
+result_pattern | pattern for writing results (`mc_{z}_{y}_{x}.h5`)
 segm_cube_size | size of cubes to be used for segmentation (1024, 1024, 1024)
 segm_overlap | size of overlap to leave along each axis while calculating segmentation
 segm_block_size | block size for blockwise multicut (256, 256, 256), must not be greater than cube size.
@@ -108,7 +112,7 @@ filename_raw | full path to inital dataset
 dataset_raw | internal dataset in the h5 file with the raw data
 res_path | output folder
 input_folder | input folder (folder with the results of segmentation that needs to be stitched)
-input_file_pattern | pattern in a form *{z}_{y}_{x}*.h5 where z, y, x are the coordinates of the top left conner of a segmentation cube
+input_file_pattern | pattern in a form `*{z}_{y}_{x}*.h5` where z, y, x are the coordinates of the top left conner of a segmentation cube
 step | steps along z, y, x axis between segmentation cubes; can be either tuple of 3 numbers or one number if it is the same for all the 3 axis
 n_threads | number of threads for multi-threading for rows and columns
 overlap | overlap between 2 cubes

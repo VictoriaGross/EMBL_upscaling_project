@@ -344,7 +344,7 @@ def run_whole_process(output_folder = None,
         sv_path = stitch_supervoxels(input_sv_path=input_sv_path, sv_pattern=sv_pattern,
                            input_raw_file=input_raw_file, dataset_raw=dataset_raw,
                            output_folder=output_folder, smart_stitch=smart_stitch_sv,
-                           step=step_sv, n_threads=n_threads, overlap=overlap_sv)
+                           step=step_sv, n_threads=min(n_threads, 4), overlap=overlap_sv)
     #run_segmentation
     run_segmentation_for_cubes(filename_raw=input_raw_file, dataset_raw=dataset_raw, filename_mem=input_mem_file,
                                filename_sv=sv_path, rf=rf,
@@ -361,5 +361,5 @@ def run_whole_process(output_folder = None,
             result_filename=result_filename_stitched,
             input_folder=output_folder,
             input_file_pattern=result_pattern,
-            step=step, n_threads=n_threads, overlap=segm_overlap)
+            step=step, n_threads= min(n_threads, 4), overlap=segm_overlap)
     return

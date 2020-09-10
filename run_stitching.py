@@ -461,7 +461,7 @@ def run_stitching(filename_raw=None, dataset_raw='/t00000/s00/0/cells', output_f
     if not filename_raw:
         filename_raw = '/g/emcf/common/5792_Sars-Cov-2/Exp_070420/FIB-SEM/alignments/20-04-23_S4_area2_Sam/amst_inv_clip_black_bg.h5'
     if not output_folder:
-        output_folder = '/g/schwab/Viktoriia/src/source/upscaling_results/whole_dataset_mito/' 
+        output_folder = '/g/schwab/Viktoriia/src/source/upscaling_results/whole_dataset_mito/'
     if not input_folder:
         input_folder = output_folder
     if not input_file_pattern:
