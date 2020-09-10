@@ -64,7 +64,7 @@ dataset_raw | internal dataset
 input_mem_file | membrane prediction
 need_stitching_supervoxels | True if cubes of supervoxels need to be stitched to get one file covering the whole dataset. If False, provide path to the already stitched file in sv_path
 input_sv_path | if need to stitch supervoxels, path to folder with blocks of supervoxels
-sv_pattern | if need to stitch supervoxels, pattern of supervoxel file names ({z}_{y}_{x}.h5)
+sv_pattern | if need to stitch supervoxels, pattern of supervoxel file names (`{z}_{y}_{x}.h5`)
 step_sv | steps along each axis used for generation of supervoxels
 overlap_sv | size of the overlap along each axis used for generation of supervoxels
 smart_stitch_sv | if True, stitching will be done in a way to oversee overlapping objects in the overlap zone; if False, center cubes will be concatenated
