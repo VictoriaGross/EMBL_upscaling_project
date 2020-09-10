@@ -27,6 +27,7 @@ h5py
 Example: 
 ```
 from run_multicut import * 
+from run_stitching import * 
 
 run_whole_process(output_folder = '...',
                   input_raw_files_train = '...', input_mem_files_train = '...', input_sv_files_train = '...', 
