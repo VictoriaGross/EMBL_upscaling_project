@@ -41,6 +41,40 @@ run_whole_process(output_folder = '...',
                   segm_overlap=(256, 256, 256), segm_block_size=[256, 256, 256], 
                   need_stitching_results = False)
 ```
+or use example in 'run_mc_s4a2_mito_new_gt.py'. 
+
+Parameters | Explanation 
+-----------|------------
+output_folder | path to folder where to put all the intermediate files and the results
+input_raw_files_train | raw file or files for training (either a string or a list)
+input_mem_files_train | membrane prediction for the corresponding raw files for training
+input_sv_files_train | supervoxels for the corresponding files for training
+input_gt_files_train | ground truth for the corresponding files for training
+input_raw_file | path to the raw dataset that needs segmentation
+dataset_raw | internal dataset
+input_mem_file | membrane prediction
+need_stitching_supervoxels | True if cubes of supervoxels need to be stitched to get one file covering the whole dataset.
+            if False, provide path to the already stitched file in sv_path
+input_sv_path | if need to stitch supervoxels, path to folder with blocks of supervoxels
+sv_pattern | if need to stitch supervoxels, pattern of supervoxel file names ({z}_{y}_{x}.h5)
+step_sv | steps along each axis used for generation of supervoxels
+overlap_sv | size of the overlap along each axis used for generation of supervoxels
+smart_stitch_sv | if True, stitching will be done in a way to oversee overlapping objects in the overlap zone; if False, center cubes will be concatenated
+sv_path | path to stitched supervoxels file
+n_threads | number of threads for multithreading
+beta | value of beta parameter for multicut segmentation
+result_pattern | pattern for writing results (mc_{z}_{y}_{x}.h5)
+segm_cube_size | size of cubes to be used for segmentation (1024, 1024, 1024)
+segm_overlap | size of overlap to leave along each axis while calculating segmentation
+segm_block_size | block size for blockwise multicut (256, 256, 256), must not be greater than cube size.
+segm_start_index | where to start segmentation, by default at (0,0,0)
+segm_end_index | where to end segmentation, by default at the end of dataset
+need_stitching_results | if True results will be stitched
+result_filename_stitched | filename for the stitched file, by default 'result_file_stitching_final.h5'
+
+Full list of parameters with explanations can be found in the code or html documentation.
+
+
 ### Stitching 
 Example: 
 ```
@@ -59,5 +93,16 @@ run_stitching(
     step=(256, 256, 256), n_threads=4, overlap=256)
 ```
 or use example in `sv_stitching.py`
+
+Parameters | Explanation 
+-----------|------------
+filename_raw | full path to inital dataset
+dataset_raw | internal dataset in the h5 file with the raw data
+res_path | output folder
+input_folder | input folder (folder with the results of segmentation that needs to be stitched)
+input_file_pattern | pattern in a form *{z}_{y}_{x}*.h5 where z, y, x are the coordinates of the top left conner of a segmentation cube
+step | steps along z, y, x axis between segmentation cubes; can be either tuple of 3 numbers or one number if it is the same for all the 3 axis
+n_threads | number of threads for multi-threading for rows and columns
+overlap | overlap between 2 cubes
 
 Full list of parameters with explanations can be found in the code or html documentation.      
