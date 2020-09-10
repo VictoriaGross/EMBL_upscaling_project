@@ -5,7 +5,9 @@
 Main files to use are: 
 ```
 run_multicut.py
+run_mc_s4a2_mito_new_gt.py
 run_stiching.py
+sv_stitching.py
 ```
 
 There is an html documentation for these two source files: 
@@ -42,6 +44,12 @@ run_whole_process(output_folder = '...',
                   need_stitching_results = False)
 ```
 or use example in 'run_mc_s4a2_mito_new_gt.py'. 
+
+Key idea:  
+1. train random forest model. 
+1. if needed stitch supervoxels (`need_stitching_supervoxels == True`): concatenate centers (`smart_stitch_sv == False`) or stitch with regards to overlapping region (`smart_stitch_sv == True`). Last one takes a long time and needs a lot of memmory.
+1. run multicut segmentation by cubes of `segm_cube_size` size with `segm_overlap` overlap between each consecutive pair by the use of blockwise segmentation with blocks of `segm_block_size`. It can be done for a selected region of the dataset. In this case set up `segm_start_index` and `segm_end_index`
+1. if needed stitch the results (`need_stitching_results == True`). 
 
 Parameters | Description 
 -----------|------------
